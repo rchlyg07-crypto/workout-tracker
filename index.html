@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workout & Nutrition Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .week {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    input {
+      width: 70px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .totals {
+      font-weight: bold;
+      background: #eaf4ff;
+    }
+    .grand-totals {
+      font-size: 1.2em;
+      font-weight: bold;
+      background: #d1ffd1;
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 10px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+      display: inline-block;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .clear-btn {
+      background: #dc3545;
+    }
+    .clear-btn:hover {
+      background: #c82333;
+    }
+    .week-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+    .date-picker {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-right: 10px;
+    }
+    
+    .tab-container {
+      margin-bottom: 20px;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .tab.active {
+      background: #007bff;
+      color: white;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .graph-container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .button-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .save-btn {
+      background: #28a745;
+    }
+    .save-btn:hover {
+      background: #218838;
+    }
+
+    .search-container {
+      margin: 20px 0;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .search-input {
+      width: 200px;
+      padding: 8px;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .search-results {
+      margin-top: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .search-result-item {
+      padding: 10px;
+      margin: 5px 0;
+      background: #f8f9fa;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .search-result-item:hover {
+      background: #e9ecef;
+    }
+
+    .no-results {
+      color: #dc3545;
+      font-style: italic;
+    }
+
+    .global-search {
+      text-align: center;
+      margin: 20px auto 30px;
+      max-width: 500px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .global-search input {
+      width: 200px;
+      margin-right: 10px;
+    }
+
+    .global-search-results {
+      margin-top: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    .auto-save-indicator {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(40, 167, 69, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: none;
+      animation: fadeInOut 2s ease-in-out;
+      z-index: 1000;
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Workout & Nutrition Tracker</h1>
+  <div class="global-search">
+    <label for="global-search-date" style="margin-right:8px;">Search by Date:</label>
+    <input type="date" id="global-search-date" class="search-input" onchange="globalSearch(this.value)" placeholder="Select date" title="Select date to search">
+    <button onclick="globalSearch(this.previousElementSibling.value)">🔍 Search</button>
+    <div class="global-search-results"></div>
+  </div>
+
+  <div id="weeks"></div>
+  <div class="button-container">
+      <button onclick="addWeek()">+ Add Week</button>
+      <button onclick="clearAllWeeks()" class="clear-btn">Clear All Weeks</button>
+  </div>
+
+  <div id="grandTotals" class="grand-totals">
+    Grand Totals: Protein = 0 kg | Calories = 0 kg | Combined = 0 kg
+  </div>
+
+  <div class="auto-save-indicator">Auto-saving...</div>
+
+  <script>
+    let weekCount = 0;
+
+    function addWeek(specificDate = null) {
+      weekCount++;
+      const container = document.getElementById('weeks');
+      const weekDiv = document.createElement('div');
+      weekDiv.className = 'week';
+      weekDiv.innerHTML = `
+        <div class="week-header">
+            <h2>Week ${weekCount}</h2>
+            <div>
+                <input type="date" class="date-picker" onchange="updateWeekDates(this)">
+                <button class="save-btn" onclick="manualSave(this)">💾 Save</button>
+                <button class="clear-btn" onclick="clearWeek(this)">Clear Week</button>
+            </div>
+        </div>
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab(this, 'data')">Data</button>
+                <button class="tab" onclick="switchTab(this, 'graph')">Graph</button>
+                <button class="tab" onclick="switchTab(this, 'search')">Search</button>
+            </div>
+            <div class="tab-content data active">
+                <table>
+          <tr>
+            <th>Day</th>
+            <th>Push-ups</th>
+            <th>Pull-ups</th>
+            <th>Squats</th>
+            <th>Protein (g)</th>
+            <th>Protein (kg)</th>
+            <th>Calories (kcal)</th>
+            <th>Calories (kg)</th>
+          </tr>
+          ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(day => `
+            <tr>
+              <td>${day}</td>
+              <td><input type="number" class="pushups" value="0"></td>
+              <td><input type="number" class="pullups" value="0"></td>
+              <td><input type="number" class="squats" value="0"></td>
+              <td><input type="number" class="protein" value="0"></td>
+              <td class="proteinKg">0</td>
+              <td><input type="number" class="calories" value="0"></td>
+              <td class="caloriesKg">0</td>
+            </tr>
+          `).join('')}
+          <tr class="totals">
+            <td>Total</td>
+            <td class="pushupTotal">0</td>
+            <td class="pullupTotal">0</td>
+            <td class="squatTotal">0</td>
+            <td class="proteinTotal">0 g</td>
+            <td class="proteinTotalKg">0 kg</td>
+            <td class="caloriesTotal">0 kcal</td>
+            <td class="caloriesTotalKg">0 kg</td>
+          </tr>
+        </table>
+            </div>
+            <div class="tab-content graph">
+                <div class="graph-container">
+                    <canvas class="week-chart"></canvas>
+                </div>
+            </div>
+            <div class="tab-content search">
+                <div class="search-container">
+                    <input type="date" class="search-input" onchange="searchDate(this.value)">
+                    <div class="search-results"></div>
+                </div>
+            </div>
+        </div>
+      `;
+      container.appendChild(weekDiv);
+
+      const datePicker = weekDiv.querySelector('.date-picker');
+      
+      if (specificDate) {
+        // Load specific date
+        datePicker.value = specificDate;
+        updateWeekDates(datePicker);
+      } else {
+        // Set default date to current Monday
+        const date = new Date();
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(date.setDate(diff));
+        datePicker.valueAsDate = monday;
+      }
+
+      // Update input event listeners
+      weekDiv.querySelectorAll("input[type='number']").forEach(input => {
+        input.addEventListener("input", debounce(() => {
+            updateTotals(weekDiv);
+            updateGrandTotals();
+        }, 1000)); // Debounce for 1 second
+      });
+
+      // Load data for the date
+      loadWeekData(datePicker);
+    }
+
+    function clearWeek(button) {
+      const weekDiv = button.closest('.week');
+      weekDiv.querySelectorAll("input[type='number']").forEach(input => {
+        input.value = 0;
+      });
+      updateTotals(weekDiv);
+      updateGrandTotals();
+    }
+
+    function updateWeekDates(datePicker) {
+      const weekDiv = datePicker.closest('.week');
+      const startDate = new Date(datePicker.value);
+      const days = weekDiv.querySelectorAll('table tr:not(:first-child):not(:last-child)');
+      
+      days.forEach((row, index) => {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + index);
+        const dayCell = row.querySelector('td:first-child');
+        const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()];
+        dayCell.textContent = `${dayName} (${date.getDate()}/${date.getMonth() + 1})`;
+      });
+
+      // Load saved data for the new dates
+      loadWeekData(datePicker);
+    }
+
+    function switchTab(tabButton, tabName) {
+      const weekDiv = tabButton.closest('.week');
+      
+      // Update tab buttons
+      weekDiv.querySelectorAll('.tab').forEach(tab => {
+          tab.classList.remove('active');
+      });
+      tabButton.classList.add('active');
+      
+      // Update tab contents
+      weekDiv.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+      });
+      weekDiv.querySelector(`.${tabName}`).classList.add('active');
+      
+      if (tabName === 'graph') {
+          updateGraph(weekDiv);
+      } else if (tabName === 'search') {
+        const searchInput = weekDiv.querySelector('.search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            weekDiv.querySelector('.search-results').innerHTML = '';
+        }
+      }
+    }
+
+    function updateGraph(weekDiv) {
+      const canvas = weekDiv.querySelector('.week-chart');
+      const ctx = canvas.getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (canvas.chart) {
+          canvas.chart.destroy();
+      }
+      
+      const days = [];
+      const pushups = [];
+      const pullups = [];
+      const squats = [];
+      const protein = [];
+      const calories = [];
+      
+      weekDiv.querySelectorAll('tr:not(:first-child):not(:last-child)').forEach(row => {
+          days.push(row.querySelector('td:first-child').textContent);
+          pushups.push(parseInt(row.querySelector('.pushups').value) || 0);
+          pullups.push(parseInt(row.querySelector('.pullups').value) || 0);
+          squats.push(parseInt(row.querySelector('.squats').value) || 0);
+          protein.push(parseInt(row.querySelector('.protein').value) || 0);
+          calories.push(parseInt(row.querySelector('.calories').value) || 0);
+      });
+      
+      canvas.chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: days,
+              datasets: [
+                  {
+                      label: 'Push-ups',
+                      data: pushups,
+                      borderColor: '#FF6384',
+                      fill: false
+                  },
+                  {
+                      label: 'Pull-ups',
+                      data: pullups,
+                      borderColor: '#36A2EB',
+                      fill: false
+                  },
+                  {
+                      label: 'Squats',
+                      data: squats,
+                      borderColor: '#FFCE56',
+                      fill: false
+                  },
+                  {
+                      label: 'Protein (g)',
+                      data: protein,
+                      borderColor: '#4BC0C0',
+                      fill: false
+                  },
+                  {
+                      label: 'Calories (kcal)',
+                      data: calories,
+                      borderColor: '#9966FF',
+                      fill: false
+                  }
+              ]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              scales: {
+                  y: {
+                      beginAtZero: true
+                  }
+              }
+          }
+      });
+    }
+
+    // Modify updateTotals to also update the graph
+    function updateTotals(weekDiv) {
+      let pushups = 0, pullups = 0, squats = 0, protein = 0, calories = 0;
+
+      weekDiv.querySelectorAll("tr").forEach(row => {
+        const p = row.querySelector(".pushups");
+        const pu = row.querySelector(".pullups");
+        const s = row.querySelector(".squats");
+        const pr = row.querySelector(".protein");
+        const c = row.querySelector(".calories");
+
+        if (p) pushups += +p.value;
+        if (pu) pullups += +pu.value;
+        if (s) squats += +s.value;
+
+        if (pr) {
+          const grams = +pr.value;
+          protein += grams;
+          row.querySelector(".proteinKg").textContent = (grams/1000).toFixed(2);
+        }
+
+        if (c) {
+          const kcal = +c.value;
+          calories += kcal;
+          row.querySelector(".caloriesKg").textContent = (kcal/7700).toFixed(2);
+        }
+      });
+
+      weekDiv.querySelector(".pushupTotal").textContent = pushups;
+      weekDiv.querySelector(".pullupTotal").textContent = pullups;
+      weekDiv.querySelector(".squatTotal").textContent = squats;
+      weekDiv.querySelector(".proteinTotal").textContent = protein + " g";
+      weekDiv.querySelector(".proteinTotalKg").textContent = (protein/1000).toFixed(2) + " kg";
+      weekDiv.querySelector(".caloriesTotal").textContent = calories + " kcal";
+      weekDiv.querySelector(".caloriesTotalKg").textContent = (calories/7700).toFixed(2) + " kg";
+
+      // Add auto-save
+      const weekDate = weekDiv.querySelector('.date-picker').value;
+      if (weekDate) {
+        saveWeekData(weekDiv);
+        showAutoSaveIndicator(weekDiv);
+      }
+
+      // Keep the graph update
+      const graphTab = weekDiv.querySelector('.graph.tab-content');
+      if (graphTab.classList.contains('active')) {
+          updateGraph(weekDiv);
+      }
+    }
+
+    function updateGrandTotals() {
+      let totalProteinKg = 0;
+      let totalCaloriesKg = 0;
+
+      document.querySelectorAll(".week").forEach(weekDiv => {
+        const pKg = parseFloat(weekDiv.querySelector(".proteinTotalKg").textContent) || 0;
+        const cKg = parseFloat(weekDiv.querySelector(".caloriesTotalKg").textContent) || 0;
+        totalProteinKg += pKg;
+        totalCaloriesKg += cKg;
+      });
+
+      const combined = (totalProteinKg + totalCaloriesKg).toFixed(2);
+
+      document.getElementById("grandTotals").textContent =
+        `Grand Totals: Protein = ${totalProteinKg.toFixed(2)} kg | Calories = ${totalCaloriesKg.toFixed(2)} kg | Combined = ${combined} kg`;
+    }
+
+    function saveWeekData(weekDiv) {
+      const date = weekDiv.querySelector('.date-picker').value;
+      if (!date) return;
+
+      const data = {
+        date: date,
+        exercises: [],
+        totals: {}
+      };
+
+      // Save daily data
+      weekDiv.querySelectorAll('tr:not(:first-child):not(:last-child)').forEach(row => {
+        data.exercises.push({
+          pushups: row.querySelector('.pushups').value,
+          pullups: row.querySelector('.pullups').value,
+          squats: row.querySelector('.squats').value,
+          protein: row.querySelector('.protein').value,
+          calories: row.querySelector('.calories').value
+        });
+      });
+
+      // Save totals
+      data.totals = {
+        pushups: weekDiv.querySelector('.pushupTotal').textContent,
+        pullups: weekDiv.querySelector('.pullupTotal').textContent,
+        squats: weekDiv.querySelector('.squatTotal').textContent,
+        protein: weekDiv.querySelector('.proteinTotal').textContent,
+        proteinKg: weekDiv.querySelector('.proteinTotalKg').textContent,
+        calories: weekDiv.querySelector('.caloriesTotal').textContent,
+        caloriesKg: weekDiv.querySelector('.caloriesTotalKg').textContent
+      };
+
+      localStorage.setItem(`workout-data-${date}`, JSON.stringify(data));
+    }
+
+    function loadWeekData(datePicker) {
+      const weekDiv = datePicker.closest('.week');
+      const date = datePicker.value;
+      const savedData = localStorage.getItem(`workout-data-${date}`);
+
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        
+        // Load daily data
+        const rows = weekDiv.querySelectorAll('tr:not(:first-child):not(:last-child)');
+        data.exercises.forEach((exercise, index) => {
+          const row = rows[index];
+          row.querySelector('.pushups').value = exercise.pushups;
+          row.querySelector('.pullups').value = exercise.pullups;
+          row.querySelector('.squats').value = exercise.squats;
+          row.querySelector('.protein').value = exercise.protein;
+          row.querySelector('.calories').value = exercise.calories;
+        });
+
+        updateTotals(weekDiv);
+        updateGrandTotals();
+      } else {
+        // Clear the form if no data exists for this date
+        clearWeek(weekDiv.querySelector('.clear-btn'));
+      }
+    }
+
+    function initializeTracker() {
+        // Get all saved dates from localStorage
+        const savedDates = Object.keys(localStorage)
+            .filter(key => key.startsWith('workout-data-'))
+            .map(key => key.replace('workout-data-', ''))
+            .sort();
+
+        if (savedDates.length > 0) {
+            // Create weeks for each saved date
+            savedDates.forEach(date => {
+                addWeek(date);
+            });
+        } else {
+            // If no saved data, add one default week
+            addWeek();
+        }
+    }
+
+    // Initialize the tracker on page load
+    document.addEventListener('DOMContentLoaded', initializeTracker);
+
+    function clearAllWeeks() {
+        if (confirm('Are you sure you want to clear all weeks? This will delete all saved data.')) {
+            // Clear localStorage
+            Object.keys(localStorage)
+                .filter(key => key.startsWith('workout-data-'))
+                .forEach(key => localStorage.removeItem(key));
+            
+            // Clear weeks container
+            const weeksContainer = document.getElementById('weeks');
+            weeksContainer.innerHTML = '';
+            weekCount = 0;
+            
+            // Reset grand totals
+            document.getElementById('grandTotals').textContent = 
+                'Grand Totals: Protein = 0 kg | Calories = 0 kg | Combined = 0 kg';
+            
+            // Add one empty week
+            addWeek();
+        }
+    }
+
+    function manualSave(button) {
+        const weekDiv = button.closest('.week');
+        const date = weekDiv.querySelector('.date-picker').value;
+        
+        if (!date) {
+            alert('Please select a date first!');
+            return;
+        }
+
+        saveWeekData(weekDiv);
+        
+        // Visual feedback
+        const originalText = button.innerHTML;
+        button.innerHTML = '✅ Saved!';
+        button.disabled = true;
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 2000);
+    }
+
+    function searchDate(searchDate) {
+        const allWeeks = document.querySelectorAll('.week');
+        const searchResults = document.querySelector('.search-results');
+        searchResults.innerHTML = '';
+
+        if (!searchDate) {
+            return;
+        }
+
+        const savedData = localStorage.getItem(`workout-data-${searchDate}`);
+        
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            const resultHTML = createSearchResultHTML(data, searchDate);
+            searchResults.innerHTML = resultHTML;
+        } else {
+            searchResults.innerHTML = '<div class="no-results">No data found for this date</div>';
+        }
+    }
+
+    function createSearchResultHTML(data, date) {
+        const formattedDate = new Date(date).toLocaleDateString();
+        const totals = data.totals;
+        
+        return `
+            <div class="search-result-item" onclick="scrollToWeek('${date}')">
+                <h3>Results for ${formattedDate}</h3>
+                <p>
+                    Push-ups: ${totals.pushups}<br>
+                    Pull-ups: ${totals.pullups}<br>
+                    Squats: ${totals.squats}<br>
+                    Protein: ${totals.protein}<br>
+                    Calories: ${totals.calories}
+                </p>
+            </div>
+        `;
+    }
+
+    function scrollToWeek(date) {
+        const weekDiv = Array.from(document.querySelectorAll('.week'))
+            .find(week => week.querySelector('.date-picker').value === date);
+        
+        if (weekDiv) {
+            weekDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Highlight the week briefly
+            weekDiv.style.transition = 'background-color 0.5s';
+            weekDiv.style.backgroundColor = '#fff3cd';
+            setTimeout(() => {
+                weekDiv.style.backgroundColor = '';
+            }, 2000);
+        } else {
+            // If week not found, create it
+            addWeek(date);
+        }
+    }
+
+    function globalSearch(searchDate) {
+      const searchResults = document.querySelector('.global-search-results');
+      searchResults.innerHTML = '';
+
+      if (!searchDate) {
+        return;
+      }
+
+      const savedData = localStorage.getItem(`workout-data-${searchDate}`);
+      
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        const resultHTML = createSearchResultHTML(data, searchDate);
+        searchResults.innerHTML = resultHTML;
+      } else {
+        searchResults.innerHTML = '<div class="no-results">No data found for this date</div>';
+      }
+
+      // Collapse all week-level search results
+      document.querySelectorAll('.week .search-results').forEach(result => {
+        result.innerHTML = '';
+      });
+    }
+
+    function showAutoSaveIndicator() {
+        const indicator = document.querySelector('.auto-save-indicator');
+        indicator.style.display = 'block';
+        
+        // Hide after animation completes
+        setTimeout(() => {
+            indicator.style.display = 'none';
+        }, 2000);
+    }
+
+    // Add debounce function to prevent too frequent saves
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+  </script>
+</body>
+</html>
